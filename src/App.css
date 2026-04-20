@@ -319,3 +319,31 @@
 }
 .send-btn:hover:not(:disabled) { background: #1e5c42; }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.exam-block {
+  background: var(--info-light);
+  border: 1px solid var(--info-border);
+  border-left: 3px solid #185FA5;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 8px 0;
+  font-family: var(--font-mono, monospace);
+}
+
+.exam-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--info);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.exam-content {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  font-family: 'Noto Sans KR', sans-serif;
+}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { CASES, FEEDBACK_SYSTEM, HINTS } from './cases.js'
+import { CASES, FEEDBACK_SYSTEM, HINTS, detectExam } from './cases.js'
 import './App.css'
 
 export default function App() {
@@ -7,7 +7,7 @@ export default function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState('select') // 'select' | 'chat'
+  const [view, setView] = useState('select')
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -40,12 +40,28 @@ export default function App() {
     setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
+    const caseData = CASES[selectedCase]
+
+    // 검사 키워드 감지
+    const detected = detectExam(text, caseData.examData)
+
+    if (detected) {
+      // 검사 결과 바로 표시 (AI 호출 없이)
+      setMessages(prev => [...prev, {
+        role: 'exam',
+        content: detected.result
+      }])
+      setLoading(false)
+      return
+    }
+
+    // 일반 환자 대화
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: CASES[selectedCase].system,
+          system: caseData.system,
           messages: newMessages
         })
       })
@@ -61,7 +77,10 @@ export default function App() {
     if (messages.length < 2 || loading) return
     setLoading(true)
     const feedbackMessages = [
-      ...messages,
+      ...messages.filter(m => m.role !== 'exam').map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      })),
       { role: 'user', content: '지금까지의 대화를 바탕으로 내 병력청취를 평가해주세요.' }
     ]
     try {
@@ -74,10 +93,7 @@ export default function App() {
         })
       })
       const data = await res.json()
-      setMessages(prev => [...prev, {
-        role: 'feedback',
-        content: data.reply
-      }])
+      setMessages(prev => [...prev, { role: 'feedback', content: data.reply }])
     } catch {
       alert('피드백 생성 중 오류가 발생했습니다.')
     }
@@ -155,6 +171,14 @@ export default function App() {
               </div>
             )
           }
+          if (m.role === 'exam') {
+            return (
+              <div key={i} className="exam-block">
+                <div className="exam-label">검사 결과</div>
+                <div className="exam-content">{m.content}</div>
+              </div>
+            )
+          }
           return (
             <div key={i} className={`msg ${m.role === 'user' ? 'msg-user' : 'msg-pt'}`}>
               {m.role !== 'user' && <div className="avatar avatar-pt">환자</div>}
@@ -181,7 +205,7 @@ export default function App() {
           value={input}
           onChange={handleTextareaInput}
           onKeyDown={handleKeyDown}
-          placeholder="환자에게 질문하세요... (Enter 전송 / Shift+Enter 줄바꿈)"
+          placeholder="환자에게 질문하거나 검사를 지시하세요... (예: 바이탈 재겠습니다, CXR 촬영하겠습니다)"
           rows={1}
           disabled={loading}
         />
