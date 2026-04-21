@@ -8,6 +8,7 @@ export default function App() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState('select')
+  const [shownExams, setShownExams] = useState(new Set())
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -21,6 +22,7 @@ export default function App() {
       role: 'assistant',
       content: `안녕하세요... (불편한 표정으로 앉아 있음)\n\n어서 오세요, 선생님. 좀 봐주세요.`
     }])
+    setShownExams(new Set())
     setView('chat')
   }
 
@@ -28,6 +30,7 @@ export default function App() {
     setSelectedCase(null)
     setMessages([])
     setInput('')
+    setShownExams(new Set())
     setView('select')
   }
 
@@ -42,11 +45,11 @@ export default function App() {
 
     const caseData = CASES[selectedCase]
 
-    // 검사 키워드 감지
-    const detected = detectExam(text, caseData.examData)
+    // 아직 제공하지 않은 검사만 감지
+    const detected = detectExam(text, caseData.examData, shownExams)
 
     if (detected) {
-      // 검사 결과 바로 표시 (AI 호출 없이)
+      setShownExams(prev => new Set([...prev, detected.key]))
       setMessages(prev => [...prev, {
         role: 'exam',
         content: detected.result
@@ -77,10 +80,12 @@ export default function App() {
     if (messages.length < 2 || loading) return
     setLoading(true)
     const feedbackMessages = [
-      ...messages.filter(m => m.role !== 'exam').map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
-      })),
+      ...messages
+        .filter(m => m.role !== 'exam' && m.role !== 'feedback')
+        .map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content
+        })),
       { role: 'user', content: '지금까지의 대화를 바탕으로 내 병력청취를 평가해주세요.' }
     ]
     try {

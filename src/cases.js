@@ -564,9 +564,11 @@ export const EXAM_KEYWORDS = {
   Echo: ["심초음파", "echocardiography", "echo", "심장 초음파", "좌심실", "ef 측정"]
 }
 
-export function detectExam(text, examData) {
+export function detectExam(text, examData, shownExams = new Set()) {
   const lower = text.toLowerCase()
   for (const [examKey, keywords] of Object.entries(EXAM_KEYWORDS)) {
+    // 이미 제공한 검사는 건너뜀
+    if (shownExams.has(examKey)) continue
     if (examData[examKey] && keywords.some(k => lower.includes(k.toLowerCase()))) {
       return { key: examKey, result: examData[examKey] }
     }
