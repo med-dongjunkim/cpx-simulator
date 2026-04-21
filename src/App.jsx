@@ -58,14 +58,18 @@ export default function App() {
       return
     }
 
-    // 일반 환자 대화
+    // 일반 환자 대화 — exam/feedback 메시지 제외하고 전달
+    const patientMessages = newMessages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }))
+
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           system: caseData.system,
-          messages: newMessages
+          messages: patientMessages
         })
       })
       const data = await res.json()
